@@ -1,0 +1,77 @@
+// File: prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  name      String
+  imageUrl  String    @db.NVarChar(MAX)
+  email     String    @db.NVarChar(MAX)
+  
+  servers   Server[]
+  members   Member[]
+  channels  Channel[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Server {
+  id        String    @id @default(uuid())
+  name      String
+  imageUrl  String    @db.NVarChar(MAX)
+  inviteCode String   @db.NVarChar(MAX)
+  
+  profileId String
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: NoAction, onUpdate: NoAction) // Changed to avoid cycle
+  
+  members   Member[]
+  channels  Channel[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([profileId])
+}
+
+model Member {
+  id        String    @id @default(uuid())
+  role      String    @default("GUEST") // Enum-like values
+  profileId String
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: NoAction, onUpdate: NoAction) // Changed to avoid cycle
+  
+  serverId  String
+  server    Server    @relation(fields: [serverId], references: [id], onDelete: NoAction, onUpdate: NoAction) // Changed to avoid cycle
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt 
+
+  @@index([profileId])
+  @@index([serverId])
+}
+
+model Channel {
+  id        String    @id @default(uuid())
+  name      String
+  type      String    @default("TEXT") // Enum-like values
+
+  profileId String
+  profile   Profile   @relation(fields: [profileId], references: [id], onDelete: NoAction, onUpdate: NoAction) // Changed to avoid cycle
+
+  serverId  String
+  server    Server    @relation(fields: [serverId], references: [id], onDelete: NoAction, onUpdate: NoAction) // Changed to avoid cycle
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt 
+
+  @@index([profileId])
+  @@index([serverId])
+}
